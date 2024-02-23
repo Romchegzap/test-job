@@ -1,0 +1,65 @@
+version: "3.7"
+services:
+    app:
+        build:
+            args:
+                user: testuser
+                uid: 1000
+            context: ./
+            dockerfile: Dockerfile
+        image: testjob
+        container_name: testjob-app
+        restart: unless-stopped
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www
+        networks:
+            - testjob-network
+
+    db:
+        image: mysql:5.7
+        container_name: testjob-db
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_HOST: "%"
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        volumes:
+            - testjob-db:/var/lib/mysql
+        networks:
+            - testjob-network
+
+    nginx:
+        image: nginx:alpine
+        container_name: testjob-nginx
+        restart: unless-stopped
+        ports:
+            - "8000:80"
+        volumes:
+            - ./:/var/www
+            - ./docker-config/nginx:/etc/nginx/conf.d
+        networks:
+            - testjob-network
+
+    phpmyadmin:
+        image: phpmyadmin
+        container_name: testjob-phpmyadmin
+        restart: always
+        ports:
+            - '8088:80'
+        environment:
+            - PMA_HOST=db
+            - UPLOAD_LIMIT=300M
+        networks:
+            - testjob-network
+
+volumes:
+    testjob-db:
+
+networks:
+    testjob-network:
+        driver: bridge

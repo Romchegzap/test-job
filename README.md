@@ -12,11 +12,15 @@ Run migrations at testjob-app container:
 
     docker exec testjob-app php artisan migrate
 
+You can check DB by phpMyAdmin running at:
+
+    http://localhost:8088/
+
 Start query worker with:
 
     docker exec testjob-app php artisan queue:work --queue=submission-submit
 
-Send data via POST to 
+Send a POST request to: 
 
     http://localhost:8000/api/submit
 

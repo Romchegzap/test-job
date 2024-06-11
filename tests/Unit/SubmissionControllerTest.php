@@ -2,6 +2,12 @@
 
 namespace Tests\Unit;
 
+use App\DTO\SubmissionDTO;
+use App\Events\SubmissionSaved;
+use App\Interfaces\SubmissionRepositoryInterface;
+use App\Repositories\SubmissionRepository;
+use Illuminate\Support\Facades\Event;
+use Mockery;
 use Tests\TestCase;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Requests\ValidateSubmissionSubmitRequest;
@@ -16,29 +22,78 @@ class SubmissionControllerTest extends TestCase
      *
      * @return void
      */
-    public function test_submit_method_dispatches_job_and_returns_json_response()
+    public function test_invoke_method_request_validation()
     {
-        $controller = new SubmissionController();
-        $request = $this->createMock(ValidateSubmissionSubmitRequest::class);
-
         $data = [
             'name'    => 'John Doe',
             'email'   => 'john.doe@example.com',
             'message' => 'This is a test message.'
         ];
 
-        $request->expects($this->once())
-            ->method('validated')
-            ->willReturn($data);
+        $request = new ValidateSubmissionSubmitRequest($data);
+
+        $validated = $request->validate($request->rules());
+        $this->assertEquals($validated, $data);
+
+        $dto = $request->toDTO();
+        $expectedDTO = new SubmissionDTO(
+            name: 'John Doe',
+            email: 'john.doe@example.com',
+            message: 'This is a test message.'
+        );
+
+        $this->assertEquals($expectedDTO, $dto);
+    }
+
+    public function test_invoke_method_dispatches_job_and_returns_json_response()
+    {
+        $data = [
+            'name'    => 'John Doe',
+            'email'   => 'john.doe@example.com',
+            'message' => 'This is a test message.'
+        ];
+
+        $controller = new SubmissionController();
+        $request = new ValidateSubmissionSubmitRequest($data);
 
         Queue::fake();
 
-        $response = $controller->submit($request);
+        $response = $controller($request);
+
         $this->assertInstanceOf(JsonResponse::class, $response);
+
         $this->assertEquals(['status' => true, 'message' => 'Data submitted for processing'], $response->getData(true));
 
-        Queue::assertPushed(SubmissionSubmit::class, function (SubmissionSubmit $job) use ($data) {
-            return $job->data === $data;
+        Queue::assertPushed(SubmissionSubmit::class, function (SubmissionSubmit $job) use ($data, $request) {
+            return $job->submissionDTO == $request->toDTO();
         });
+    }
+
+    public function test_submission_submit_queue()
+    {
+        $data = [
+            'name' => 'John Doe',
+            'email' => 'john.doe@example.com',
+            'message' => 'This is a test message.',
+        ];
+
+        $job = new SubmissionSubmit($data);
+
+        $this->assertInstanceOf(SubmissionDTO::class, $job->submissionDTO);
+        $this->assertEquals($data['name'], $job->submissionDTO->name);
+        $this->assertEquals($data['email'], $job->submissionDTO->email);
+        $this->assertEquals($data['message'], $job->submissionDTO->message);
+
+        Event::fake();
+
+        $submissionRepository = app()->make(SubmissionRepositoryInterface::class);
+        $job->handle($submissionRepository);
+
+        $this->assertDatabaseHas('submissions', [
+            'name' => $job->submissionDTO->name,
+            'email' => $job->submissionDTO->email,
+            'message' => $job->submissionDTO->message,
+        ]);
+        Event::assertDispatched(SubmissionSaved::class);
     }
 }

@@ -4,13 +4,14 @@ Install composer:
 
     composer install
 
-Start docker via:
+Start project via:
 
-    docker compose run -d
+    vendor/bin/sail up
 
-Run migrations at testjob-app container:
+Run migrations in container:
 
-    docker exec testjob-app php artisan migrate
+    vendor/bin/sail shell
+    php artisan migrate
 
 You can check DB by phpMyAdmin running at:
 
@@ -18,9 +19,10 @@ You can check DB by phpMyAdmin running at:
 
 Start query worker with:
 
-    docker exec testjob-app php artisan queue:work --queue=submission-submit
+    vendor/bin/sail shell
+    php artisan queue:work --queue=submission-submit
 
-Send a POST request to: 
+Send a POST request to:
 
     http://localhost:8000/api/submit
 
@@ -28,8 +30,10 @@ Send a POST request to:
       "name": "John Doe",
       "email": "john.doe@example.com",
       "message": "This is a test message."
+
 }
 
 To start UnitTest use:
 
-     docker exec testjob-app php artisan test
+    vendor/bin/sail shell
+    php artisan test

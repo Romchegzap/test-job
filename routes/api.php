@@ -15,4 +15,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('/submit', [SubmissionController::class, 'submit']);
+Route::post('/submit', SubmissionController::class);

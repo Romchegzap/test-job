@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\DTO\SubmissionDTO;
 use App\Interfaces\SubmissionRepositoryInterface;
 use App\Models\Submission;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,9 +25,9 @@ class SubmissionRepository implements SubmissionRepositoryInterface
         return Submission::destroy($submissionId);
     }
 
-    public function createSubmission(array $submissionDetails): Model
+    public function createSubmission(SubmissionDTO $submissionDTO): Model
     {
-        return Submission::query()->create($submissionDetails);
+        return Submission::query()->create($submissionDTO->toArray());
     }
 
     public function updateSubmission(int $submissionId, array $newDetails)

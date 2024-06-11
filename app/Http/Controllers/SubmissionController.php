@@ -8,10 +8,12 @@ use Illuminate\Http\JsonResponse;
 
 class SubmissionController extends Controller
 {
-    public function submit(ValidateSubmissionSubmitRequest $request): JsonResponse
+    public function __invoke(ValidateSubmissionSubmitRequest $request): JsonResponse
     {
-        $validatedFields = $request->validated();
-        SubmissionSubmit::dispatch($validatedFields)->onQueue('submission-submit');
+//        dd(111, $request->all());
+        $submissionDTO = $request->toDTO();
+//        dd($submissionDTO);
+        SubmissionSubmit::dispatch($submissionDTO->toArray())->onQueue('submission-submit');
 
         return response()->json(['status' => true, 'message' => 'Data submitted for processing']);
     }

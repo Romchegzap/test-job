@@ -34,8 +34,20 @@ class SubmissionControllerTest extends TestCase
 
         $validated = $request->validate($request->rules());
         $this->assertEquals($validated, $data);
+    }
 
+
+    public function test_invoke_method_request_to_dto()
+    {
+        $data = [
+            'name'    => 'John Doe',
+            'email'   => 'john.doe@example.com',
+            'message' => 'This is a test message.'
+        ];
+
+        $request = new ValidateSubmissionSubmitRequest($data);
         $dto = $request->toDTO();
+
         $expectedDTO = new SubmissionDTO(
             name: 'John Doe',
             email: 'john.doe@example.com',
@@ -71,18 +83,11 @@ class SubmissionControllerTest extends TestCase
 
     public function test_submission_submit_queue()
     {
-        $data = [
-            'name' => 'John Doe',
-            'email' => 'john.doe@example.com',
-            'message' => 'This is a test message.',
-        ];
-
-        $job = new SubmissionSubmit($data);
-
-        $this->assertInstanceOf(SubmissionDTO::class, $job->submissionDTO);
-        $this->assertEquals($data['name'], $job->submissionDTO->name);
-        $this->assertEquals($data['email'], $job->submissionDTO->email);
-        $this->assertEquals($data['message'], $job->submissionDTO->message);
+        $job = new SubmissionSubmit(new SubmissionDTO(
+            name: 'John Doe',
+            email: 'john.doe@example.com',
+            message: 'This is a test message.'
+        ));
 
         Event::fake();
 
